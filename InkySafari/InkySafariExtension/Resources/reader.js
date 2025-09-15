@@ -76,7 +76,7 @@
     const contentWrapper = document.createElement('div');
     contentWrapper.id = 'reader-content';
     contentWrapper.style.cssText = `
-      max-width: 700px;
+      max-width: 800px;
       margin: 0 auto;
       padding: 60px 40px 100px;
       line-height: 1.7;
@@ -216,13 +216,22 @@
     // Safari风格的文章阅读样式，优化视觉效果
     const style = document.createElement('style');
     style.textContent = `
-      /* 全局重置 */
-      #reader-content * {
+      /* 全局重置 - 适配新的内容盒子结构 */
+      #reader-content *, #reader-inner-content * {
         box-sizing: border-box;
       }
       
+      /* 内容盒子样式 */
+      #reader-content-box {
+        transition: box-shadow 0.3s ease;
+      }
+      
+      #reader-content-box:hover {
+        box-shadow: 0 6px 32px rgba(0, 0, 0, 0.12);
+      }
+      
       /* 标题样式 - 更大更突出 */
-      #reader-content h1 {
+      #reader-content h1, #reader-inner-content h1 {
         font-size: 32px;
         font-weight: 700;
         margin-bottom: 16px;
@@ -232,7 +241,7 @@
       }
       
       /* 副标题和元信息 - 更精致的样式 */
-      #reader-content .reader-meta {
+      #reader-content .reader-meta, #reader-inner-content .reader-meta {
         color: #666;
         font-size: 15px;
         margin-bottom: 32px;
@@ -243,7 +252,7 @@
       }
       
       /* 段落样式 - 优化可读性 */
-      #reader-content p {
+      #reader-content p, #reader-inner-content p {
         margin-bottom: 24px;
         font-size: 18px;
         line-height: 1.8;
@@ -253,7 +262,7 @@
       }
       
       /* 二级标题 */
-      #reader-content h2 {
+      #reader-content h2, #reader-inner-content h2 {
         font-size: 26px;
         margin: 40px 0 20px;
         font-weight: 600;
@@ -263,7 +272,7 @@
       }
       
       /* 三级标题 */
-      #reader-content h3 {
+      #reader-content h3, #reader-inner-content h3 {
         font-size: 22px;
         margin: 32px 0 16px;
         font-weight: 600;
@@ -272,7 +281,7 @@
       }
       
       /* 图片样式 - 添加圆角和阴影 */
-      #reader-content img {
+      #reader-content img, #reader-inner-content img {
         max-width: 100%;
         height: auto;
         margin: 32px auto;
@@ -282,12 +291,12 @@
         transition: transform 0.2s ease;
       }
       
-      #reader-content img:hover {
+      #reader-content img:hover, #reader-inner-content img:hover {
         transform: scale(1.01);
       }
       
       /* 图片说明文字 - 更优雅的排版 */
-      #reader-content figcaption {
+      #reader-content figcaption, #reader-inner-content figcaption {
         text-align: center;
         color: #666;
         font-size: 15px;
@@ -298,7 +307,7 @@
       }
       
       /* 链接样式 - 渐变效果和悬停动画 */
-      #reader-content a {
+      #reader-content a, #reader-inner-content a {
         color: #0066cc;
         text-decoration: none;
         background-image: linear-gradient(to bottom, rgba(0,102,204,0.2) 0%, rgba(0,102,204,0.2) 100%);
@@ -309,19 +318,19 @@
         padding-bottom: 1px;
       }
       
-      #reader-content a:hover {
+      #reader-content a:hover, #reader-inner-content a:hover {
         color: #0052a3;
         background-image: linear-gradient(to bottom, rgba(0,102,204,0.4) 0%, rgba(0,102,204,0.4) 100%);
         text-decoration: none;
       }
       
       /* 列表样式 - 更精致的项目符号 */
-      #reader-content ul, #reader-content ol {
+      #reader-content ul, #reader-content ol, #reader-inner-content ul, #reader-inner-content ol {
         margin: 24px 0;
         padding-left: 1.8em;
       }
       
-      #reader-content li {
+      #reader-content li, #reader-inner-content li {
         margin-bottom: 12px;
         font-size: 18px;
         line-height: 1.7;
@@ -329,7 +338,7 @@
       }
       
       /* 引用样式 - 更明显的视觉区分 */
-      #reader-content blockquote {
+      #reader-content blockquote, #reader-inner-content blockquote {
         margin: 32px 0;
         padding: 16px 24px 16px 24px;
         border-left: 3px solid #0066cc;
@@ -340,12 +349,12 @@
       }
       
       /* 代码样式 - 更现代的外观 */
-      #reader-content pre, #reader-content code {
+      #reader-content pre, #reader-content code, #reader-inner-content pre, #reader-inner-content code {
         font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
         font-size: 14px;
       }
       
-      #reader-content pre {
+      #reader-content pre, #reader-inner-content pre {
         padding: 20px;
         overflow-x: auto;
         margin: 24px 0;
@@ -354,7 +363,7 @@
         border: 1px solid rgba(0,0,0,0.05);
       }
       
-      #reader-content code {
+      #reader-content code, #reader-inner-content code {
         background-color: rgba(0,0,0,0.05);
         padding: 2px 4px;
         border-radius: 4px;
@@ -362,25 +371,25 @@
       }
       
       /* 表格样式 - 更现代的设计 */
-      #reader-content table {
+      #reader-content table, #reader-inner-content table {
         width: 100%;
         border-collapse: collapse;
         margin: 24px 0;
         font-size: 16px;
       }
       
-      #reader-content th {
+      #reader-content th, #reader-inner-content th {
         background-color: rgba(0,102,204,0.05);
         font-weight: 600;
         text-align: left;
       }
       
-      #reader-content th, #reader-content td {
+      #reader-content th, #reader-content td, #reader-inner-content th, #reader-inner-content td {
         padding: 12px 16px;
         border: 1px solid #e0e0e0;
       }
       
-      #reader-content tr:nth-child(even) {
+      #reader-content tr:nth-child(even), #reader-inner-content tr:nth-child(even) {
         background-color: rgba(0,0,0,0.01);
       }
       
@@ -388,26 +397,32 @@
       @media (max-width: 768px) {
         #reader-content {
           padding: 40px 20px 80px;
+          max-width: 100%;
         }
         
-        #reader-content h1 {
+        #reader-content-box {
+          padding: 20px;
+          border-radius: 8px;
+        }
+        
+        #reader-content h1, #reader-inner-content h1 {
           font-size: 28px;
         }
         
-        #reader-content h2 {
+        #reader-content h2, #reader-inner-content h2 {
           font-size: 24px;
         }
         
-        #reader-content h3 {
+        #reader-content h3, #reader-inner-content h3 {
           font-size: 20px;
         }
         
-        #reader-content p, #reader-content li {
+        #reader-content p, #reader-content li, #reader-inner-content p, #reader-inner-content li {
           font-size: 16px;
           line-height: 1.7;
         }
         
-        #reader-content img {
+        #reader-content img, #reader-inner-content img {
           border-radius: 4px;
           margin: 24px auto;
         }
