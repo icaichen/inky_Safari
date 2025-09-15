@@ -1,200 +1,3 @@
-// This is a simplified version of Mozilla's Readability library
-// Original source: https://github.com/mozilla/readability
-
-// 确保在全局window对象上可用，兼容Chrome和Safari扩展环境
-(function(window) {
-  'use strict';
-
-  class Readability {
-    constructor(doc, options = {}) {
-      this.doc = doc;
-      this.options = options;
-      this.articleTitle = '';
-      this.articleByline = '';
-      this.articleDir = '';
-      this.articleContent = '';
-      this.articleExcerpt = '';
-      this.articleSiteName = '';
-      this.articlePublishedTime = '';
-    }
-
-    parse() {
-      try {
-        // Clone the document to avoid modifying the original
-        const docClone = this.doc.cloneNode(true);
-        
-        // Remove unwanted elements
-        this._cleanStyles(docClone);
-        this._removeScripts(docClone);
-        this._removeUnlikelyCandidates(docClone);
-        this._removeHiddenElements(docClone);
-        
-        // Find the main content
-        const article = this._getArticle(docClone);
-        if (!article) return null;
-        
-        // Extract metadata
-        this._extractMetadata(docClone);
-        
-        // Process the content
-        this._processContent(article);
-        
-        // Create the result
-        return {
-          title: this.articleTitle,
-          byline: this.articleByline,
-          dir: this.articleDir,
-          content: this.articleContent,
-          excerpt: this.articleExcerpt,
-          siteName: this.articleSiteName,
-          publishedTime: this.articlePublishedTime
-        };
-      } catch (e) {
-        console.error('Readability parse error:', e);
-        return null;
-      }
-    }
-
-    _cleanStyles(doc) {
-      // Remove inline styles
-      const elements = doc.querySelectorAll('[style]');
-      for (let i = 0; i < elements.length; i++) {
-        elements[i].removeAttribute('style');
-      }
-
-      // Remove style tags
-      const styleTags = doc.querySelectorAll('style');
-      for (let i = 0; i < styleTags.length; i++) {
-        styleTags[i].remove();
-      }
-    }
-
-    _removeScripts(doc) {
-      const scripts = doc.querySelectorAll('script, noscript');
-      for (let i = 0; i < scripts.length; i++) {
-        scripts[i].remove();
-      }
-    }
-
-    _removeUnlikelyCandidates(doc) {
-      const unlikelyCandidates = doc.querySelectorAll(
-        'aside, footer, header, nav, script, style, [role="banner"], [role="complementary"], [role="navigation"], [role="search"], [aria-hidden="true"]'
-      );
-      for (let i = 0; i < unlikelyCandidates.length; i++) {
-        unlikelyCandidates[i].remove();
-      }
-    }
-
-    _removeHiddenElements(doc) {
-      const elements = doc.querySelectorAll('*');
-      for (let i = 0; i < elements.length; i++) {
-        const style = window.getComputedStyle(elements[i]);
-        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-          elements[i].remove();
-        }
-      }
-    }
-
-    _getArticle(doc) {
-      // Try to find main content using common selectors
-      let mainContent = doc.querySelector('article, [role="main"], .article, .content, .post, .main');
-      
-      if (!mainContent) {
-        // Fallback: find the element with the most paragraphs
-        const allElements = doc.body.querySelectorAll('*');
-        let highestParagraphCount = 0;
-        
-        for (let i = 0; i < allElements.length; i++) {
-          const pCount = allElements[i].querySelectorAll('p').length;
-          if (pCount > highestParagraphCount && pCount > 2) {
-            highestParagraphCount = pCount;
-            mainContent = allElements[i];
-          }
-        }
-      }
-      
-      if (!mainContent) {
-        // Final fallback: use body
-        mainContent = doc.body;
-      }
-      
-      return mainContent;
-    }
-
-    _extractMetadata(doc) {
-      // Extract title
-      this.articleTitle = doc.title || '';
-      const ogTitle = doc.querySelector('meta[property="og:title"]');
-      if (ogTitle && ogTitle.content) {
-        this.articleTitle = ogTitle.content;
-      }
-
-      // Extract byline
-      const byline = doc.querySelector('[rel="author"], .author, .byline');
-      if (byline) {
-        this.articleByline = byline.textContent.trim();
-      }
-
-      // Extract excerpt
-      const description = doc.querySelector('meta[name="description"], meta[property="og:description"]');
-      if (description && description.content) {
-        this.articleExcerpt = description.content;
-      }
-
-      // Extract site name
-      const siteName = doc.querySelector('meta[property="og:site_name"]');
-      if (siteName && siteName.content) {
-        this.articleSiteName = siteName.content;
-      } else {
-        this.articleSiteName = doc.domain || '';
-      }
-
-      // Extract published time
-      const time = doc.querySelector('time[datetime], [itemprop="datePublished"]');
-      if (time) {
-        this.articlePublishedTime = time.getAttribute('datetime') || time.textContent.trim();
-      }
-    }
-
-    _processContent(article) {
-      // Create a clean container for the content
-      const cleanContainer = document.createElement('div');
-      
-      // Clone the article content
-      const articleClone = article.cloneNode(true);
-      
-      // Clean up the article content
-      this._cleanNode(articleClone);
-      
-      // Remove any remaining unwanted elements
-      this._removeUnlikelyCandidates(articleClone);
-      
-      // Convert to HTML
-      cleanContainer.appendChild(articleClone);
-      this.articleContent = cleanContainer.innerHTML;
-    }
-
-    _cleanNode(node) {
-      // Remove empty elements
-      const children = node.children;
-      for (let i = children.length - 1; i >= 0; i--) {
-        const child = children[i];
-        
-        // Recursively clean children
-        this._cleanNode(child);
-        
-        // Remove empty elements
-        if (!child.textContent.trim() && !child.querySelector('img')) {
-          child.remove();
-        }
-      }
-    }
-  }
-
-  // 暴露Readability类到全局window对象
-  window.Readability = Readability;
-})(window);
-
 // reader.js — clean reading mode with readability
 
 (function() {
@@ -215,7 +18,7 @@
   function ensureReadability() {
     if (window.Readability) return true;
     try {
-      // Readability.js 已内联到文件中
+      // readability.js 应该已经在 manifest 中预先加载
       return !!window.Readability;
     } catch (e) {
       console.error('Readability not loaded:', e);
@@ -234,10 +37,11 @@
       right: 0;
       bottom: 0;
       z-index: 2147483647;
-      background: #f9f9f5;
-      padding: 20px;
+      background: #f8f5f0;
+      padding: 0;
       overflow-y: auto;
-      font-family: 'Georgia', 'Times New Roman', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Georgia', 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
     `;
     
     // 返回按钮
@@ -246,35 +50,63 @@
     backBtn.textContent = '← 返回';
     backBtn.style.cssText = `
       position: fixed;
-      top: 10px;
-      left: 10px;
+      top: 20px;
+      left: 20px;
       z-index: 2147483648;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: none;
+      background: rgba(0,0,0,0.08);
+      color: #333;
+      border: 1px solid rgba(0,0,0,0.1);
       padding: 8px 16px;
-      border-radius: 4px;
+      border-radius: 18px;
       cursor: pointer;
       font-size: 14px;
+      font-weight: 500;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
     `;
     backBtn.addEventListener('click', () => toggleReader());
+    backBtn.addEventListener('mouseenter', () => {
+      backBtn.style.background = 'rgba(0,0,0,0.15)';
+    });
+    backBtn.addEventListener('mouseleave', () => {
+      backBtn.style.background = 'rgba(0,0,0,0.08)';
+    });
     
-    // 内容容器
+    // 创建内容包装框
     const contentWrapper = document.createElement('div');
     contentWrapper.id = 'reader-content';
     contentWrapper.style.cssText = `
       max-width: 700px;
       margin: 0 auto;
-      padding: 20px 0;
-      line-height: 1.6;
+      padding: 60px 40px 100px;
+      line-height: 1.7;
       color: #333;
     `;
     
+    // 创建内容外部盒子
+    const contentBox = document.createElement('div');
+    contentBox.id = 'reader-content-box';
+    contentBox.style.cssText = `
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      padding: 40px;
+      margin-bottom: 40px;
+      position: relative;
+    `;
+    
+    // 将原始内容包装在这个盒子里
+    const innerContent = document.createElement('div');
+    innerContent.id = 'reader-inner-content';
+    
+    // 组织结构
+    contentBox.appendChild(innerContent);
+    contentWrapper.appendChild(contentBox);
     container.appendChild(contentWrapper);
     document.body.appendChild(container);
     document.body.appendChild(backBtn);
     
-    return { container, contentWrapper, backBtn };
+    return { container, contentWrapper, backBtn, innerContent };
   }
 
   // ---- 保存原始 HTML
@@ -294,6 +126,10 @@
     try {
       saveOriginalHtml();
       
+      // 调整页面标题以包含"阅读模式"标识
+      const originalTitle = document.title;
+      document.title = '📖 ' + originalTitle;
+      
       // 使用 Readability 提取文章内容
       const documentClone = document.cloneNode(true);
       const article = new window.Readability(documentClone).parse();
@@ -306,25 +142,52 @@
       articleData = article;
       
       // 创建阅读器界面
-      const { container, contentWrapper } = createReaderContainer();
+      const { container, contentWrapper, innerContent } = createReaderContainer();
       readerContainer = container;
       
       // 设置标题
       if (article.title) {
         const titleEl = document.createElement('h1');
         titleEl.textContent = article.title;
-        titleEl.style.cssText = 'font-size: 28px; margin-bottom: 20px; line-height: 1.3;';
-        contentWrapper.appendChild(titleEl);
+        innerContent.appendChild(titleEl);
+      }
+      
+      // 添加元信息（作者、发布时间、来源）
+      const metaInfo = [];
+      if (article.byline) {
+        metaInfo.push(article.byline);
+      }
+      if (article.publishedTime) {
+        // 尝试格式化日期
+        try {
+          const date = new Date(article.publishedTime);
+          if (!isNaN(date.getTime())) {
+            metaInfo.push(date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }));
+          }
+        } catch (e) {
+          metaInfo.push(article.publishedTime);
+        }
+      }
+      if (article.siteName) {
+        metaInfo.push(article.siteName);
+      }
+      
+      // 显示元信息
+      if (metaInfo.length > 0) {
+        const metaEl = document.createElement('div');
+        metaEl.className = 'reader-meta';
+        metaEl.textContent = metaInfo.join(' · ');
+        innerContent.appendChild(metaEl);
       }
       
       // 设置内容
-      contentWrapper.innerHTML += article.content;
+      innerContent.innerHTML += article.content;
       
-      // 应用 E-Ink 样式
+      // 应用 Safari 阅读器样式
       applyReaderStyling(contentWrapper);
       
-      // 添加页面过滤
-      setPageFilter('grayscale(1) contrast(1.2) brightness(1.05)');
+      // 添加柔和的页面过滤，模拟纸张质感
+      setPageFilter('contrast(1.05) brightness(1.03)');
       
       readerActive = true;
       showToast('📝 阅读模式已启用');
@@ -350,34 +213,216 @@
 
   // ---- 应用阅读器样式
   function applyReaderStyling(contentWrapper) {
-    // 基本样式
+    // Safari风格的文章阅读样式，优化视觉效果
     const style = document.createElement('style');
     style.textContent = `
+      /* 全局重置 */
+      #reader-content * {
+        box-sizing: border-box;
+      }
+      
+      /* 标题样式 - 更大更突出 */
+      #reader-content h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        line-height: 1.2;
+        color: #1a1a1a;
+        letter-spacing: -0.02em;
+      }
+      
+      /* 副标题和元信息 - 更精致的样式 */
+      #reader-content .reader-meta {
+        color: #666;
+        font-size: 15px;
+        margin-bottom: 32px;
+        line-height: 1.5;
+        font-style: italic;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+      }
+      
+      /* 段落样式 - 优化可读性 */
       #reader-content p {
-        margin-bottom: 20px;
+        margin-bottom: 24px;
         font-size: 18px;
+        line-height: 1.8;
+        color: #333;
+        letter-spacing: 0.01em;
+        text-rendering: optimizeLegibility;
       }
+      
+      /* 二级标题 */
       #reader-content h2 {
-        font-size: 24px;
-        margin: 30px 0 15px;
-        font-weight: bold;
+        font-size: 26px;
+        margin: 40px 0 20px;
+        font-weight: 600;
+        color: #1a1a1a;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
       }
+      
+      /* 三级标题 */
       #reader-content h3 {
-        font-size: 20px;
-        margin: 25px 0 10px;
-        font-weight: bold;
+        font-size: 22px;
+        margin: 32px 0 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+        line-height: 1.3;
       }
+      
+      /* 图片样式 - 添加圆角和阴影 */
       #reader-content img {
         max-width: 100%;
         height: auto;
-        margin: 20px 0;
+        margin: 32px auto;
+        display: block;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease;
       }
+      
+      #reader-content img:hover {
+        transform: scale(1.01);
+      }
+      
+      /* 图片说明文字 - 更优雅的排版 */
+      #reader-content figcaption {
+        text-align: center;
+        color: #666;
+        font-size: 15px;
+        margin-top: -8px;
+        margin-bottom: 24px;
+        font-style: italic;
+        line-height: 1.6;
+      }
+      
+      /* 链接样式 - 渐变效果和悬停动画 */
       #reader-content a {
-        color: #1a73e8;
+        color: #0066cc;
+        text-decoration: none;
+        background-image: linear-gradient(to bottom, rgba(0,102,204,0.2) 0%, rgba(0,102,204,0.2) 100%);
+        background-size: 100% 1px;
+        background-position: 0 100%;
+        background-repeat: repeat-x;
+        transition: all 0.2s ease;
+        padding-bottom: 1px;
+      }
+      
+      #reader-content a:hover {
+        color: #0052a3;
+        background-image: linear-gradient(to bottom, rgba(0,102,204,0.4) 0%, rgba(0,102,204,0.4) 100%);
         text-decoration: none;
       }
-      #reader-content a:hover {
-        text-decoration: underline;
+      
+      /* 列表样式 - 更精致的项目符号 */
+      #reader-content ul, #reader-content ol {
+        margin: 24px 0;
+        padding-left: 1.8em;
+      }
+      
+      #reader-content li {
+        margin-bottom: 12px;
+        font-size: 18px;
+        line-height: 1.7;
+        color: #333;
+      }
+      
+      /* 引用样式 - 更明显的视觉区分 */
+      #reader-content blockquote {
+        margin: 32px 0;
+        padding: 16px 24px 16px 24px;
+        border-left: 3px solid #0066cc;
+        color: #555;
+        background-color: rgba(0,102,204,0.03);
+        border-radius: 0 8px 8px 0;
+        font-style: italic;
+      }
+      
+      /* 代码样式 - 更现代的外观 */
+      #reader-content pre, #reader-content code {
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        font-size: 14px;
+      }
+      
+      #reader-content pre {
+        padding: 20px;
+        overflow-x: auto;
+        margin: 24px 0;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.05);
+      }
+      
+      #reader-content code {
+        background-color: rgba(0,0,0,0.05);
+        padding: 2px 4px;
+        border-radius: 4px;
+        color: #d14;
+      }
+      
+      /* 表格样式 - 更现代的设计 */
+      #reader-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+        font-size: 16px;
+      }
+      
+      #reader-content th {
+        background-color: rgba(0,102,204,0.05);
+        font-weight: 600;
+        text-align: left;
+      }
+      
+      #reader-content th, #reader-content td {
+        padding: 12px 16px;
+        border: 1px solid #e0e0e0;
+      }
+      
+      #reader-content tr:nth-child(even) {
+        background-color: rgba(0,0,0,0.01);
+      }
+      
+      /* 响应式设计 - 更精细的断点控制 */
+      @media (max-width: 768px) {
+        #reader-content {
+          padding: 40px 20px 80px;
+        }
+        
+        #reader-content h1 {
+          font-size: 28px;
+        }
+        
+        #reader-content h2 {
+          font-size: 24px;
+        }
+        
+        #reader-content h3 {
+          font-size: 20px;
+        }
+        
+        #reader-content p, #reader-content li {
+          font-size: 16px;
+          line-height: 1.7;
+        }
+        
+        #reader-content img {
+          border-radius: 4px;
+          margin: 24px auto;
+        }
+      }
+      
+      /* 打印样式 */
+      @media print {
+        #reader-back-btn {
+          display: none !important;
+        }
+        
+        #reader-container {
+          position: relative !important;
+          background: white !important;
+        }
       }
     `;
     contentWrapper.appendChild(style);
@@ -401,6 +446,13 @@
       
       // 清除页面过滤
       clearPageFilter();
+      
+      // 恢复原始页面标题
+      if (originalHtml) {
+        const tempDoc = document.implementation.createHTMLDocument('');
+        tempDoc.documentElement.innerHTML = originalHtml;
+        document.title = tempDoc.title;
+      }
       
       readerActive = false;
       showToast('❌ 阅读模式已关闭');
