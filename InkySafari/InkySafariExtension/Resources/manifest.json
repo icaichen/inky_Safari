@@ -1,0 +1,33 @@
+{    "manifest_version": 2,
+    "name": "E-Ink Paper Mode",
+    "version": "1.2.0",
+    "description": "Kindle/E-Ink 纸质观感：颗粒、纸纹、可选色彩，Kindle 模式含残影刷新。",
+    "permissions": ["activeTab", "storage", "webNavigation"],
+    "content_security_policy": "script-src 'self'; object-src 'self'",
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": false
+    },
+    "browser_action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+      }
+    },
+    "icons": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["reader.js", "content.js"],
+        "run_at": "document_idle",
+        "all_frames": true,
+        "match_about_blank": true
+      }
+    ]
+  }
